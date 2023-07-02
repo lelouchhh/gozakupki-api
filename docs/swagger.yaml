@@ -1,0 +1,147 @@
+basePath: /api/v1
+definitions:
+  domain.Auth:
+    properties:
+      devInfo:
+        type: string
+      email:
+        type: string
+      hash:
+        type: string
+      login:
+        type: string
+      password:
+        minLength: 6
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  http.ResponseError:
+    properties:
+      message:
+        type: string
+    type: object
+  response.Error:
+    properties:
+      code:
+        type: integer
+      details: {}
+      message:
+        type: string
+    type: object
+  response.Success:
+    properties:
+      data: {}
+    type: object
+externalDocs:
+  description: OpenAPI
+  url: https://swagger.io/resources/open-api/
+host: localhost:9090
+info:
+  contact:
+    email: llchh@yahoo.com
+    name: API Support
+    url: gozakupki.com
+  description: Documentation for Gozakupki api.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Swagger GoZakupki Api
+  version: "1.0"
+paths:
+  /auth/check:
+    get:
+      consumes:
+      - application/json
+      description: Check if the authentication token is valid
+      parameters:
+      - default: Bearer
+        description: Authentication token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Success'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Error'
+      security:
+      - ApiKeyAuth: []
+      summary: Check authentication token
+      tags:
+      - Authentication
+  /auth/sign_in:
+    post:
+      consumes:
+      - application/json
+      description: Sign in with user credentials
+      parameters:
+      - description: User object
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/domain.Auth'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Success'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Error'
+      security:
+      - BearerAuth: []
+      summary: Sign in
+      tags:
+      - Authentication
+  /auth/sign_up:
+    post:
+      consumes:
+      - application/json
+      description: Sign up with user credentials. Send hash to user email
+      parameters:
+      - description: User object
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/domain.Auth'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http.ResponseError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/http.ResponseError'
+      summary: Sign up
+      tags:
+      - Authentication
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

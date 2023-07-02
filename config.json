@@ -1,0 +1,21 @@
+{
+  "debug": true,
+  "server": {
+    "address": ":9090"
+  },
+  "context":{
+    "timeout":2
+  },
+  "database": {
+    "host": "185.200.241.2",
+    "port": "5432",
+    "user": "slave",
+    "pass": "]}b3sZ}Rrdc8TyY=",
+    "name": "dungeon"
+  },
+  "tools" : {
+    "emailConfirm" : {
+      "path" : "/Users/llchh/GolandProjects/email-main/emailConfirm/email"
+    }
+  }
+}
