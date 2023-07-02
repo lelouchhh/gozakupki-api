@@ -1,0 +1,50 @@
+# Compiled Object files, Static and Shared libraries (Go)
+*.o
+*.a
+*.so
+
+# Executables
+*.exe
+*.exe~
+*.dll
+*.dylib
+
+# Output files
+*.out
+*.test
+
+# Dependency directories (Godep, Glide, vndr, Dep, etc)
+/vendor/
+/Godeps/
+/_vendor/
+/.vendor/
+/dep/
+
+# Go specific
+*.prof
+*.json
+
+# Build output
+/build/
+
+# Log files
+*.log
+
+# IDE files (Visual Studio Code, IntelliJ IDEA, GoLand, etc)
+.idea/
+.vscode/
+*.iml
+
+# Cache and temporary files
+.cache/
+.tmp/
+
+# Binary release files
+/*.tar.gz
+/*.zip
+
+# Go binary
+/bin/
+
+# Go modules cache
+/go.sum
