@@ -3,15 +3,10 @@ package http
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
-	validator "gopkg.in/go-playground/validator.v9"
 	domain "gozakupki-api/domain"
 	"gozakupki-api/pkg/response"
 	"net/http"
 )
-
-type ResponseError struct {
-	Message string `json:"message"`
-}
 
 // ArticleHandler  represent the httphandler for article
 type AuthHandler struct {
@@ -54,11 +49,12 @@ func (a *AuthHandler) SignIn(c *gin.Context) {
 		)
 		return
 	}
-	//err = validateUserFields(auth, "Password")
+	//sv := validator.New()
+	//err = sv.Struct(&auth)
 	if err != nil {
 		c.JSON(getStatusCode(err), response.SendErrorResponse(response.Error{
 			Message: domain.ErrBadParamInput.Error(),
-			Details: err,
+			Details: "Поля не соответствуют требованиям",
 			Code:    getStatusCode(err),
 		}))
 		return
@@ -87,8 +83,8 @@ func (a *AuthHandler) SignIn(c *gin.Context) {
 // @Produce json
 // @Param user body domain.Auth true "User object"
 // @Success 201 "Created"
-// @Failure 400 {object} ResponseError
-// @Failure 500 {object} ResponseError
+// @Failure 400 {object} response.Success
+// @Failure 500 {object} response.Error
 // @Router /auth/sign_up [post]
 func (a *AuthHandler) SignUp(c *gin.Context) {
 	var auth domain.Auth
@@ -100,7 +96,8 @@ func (a *AuthHandler) SignUp(c *gin.Context) {
 		)
 		return
 	}
-	//err = validateFields(auth, "Email", "Password", "Login")
+	////sv := validator.New()
+	////err = sv.Struct(&auth)
 	//if err != nil {
 	//	c.JSON(http.StatusBadRequest, domain.ErrBadParamInput)
 	//}
@@ -152,9 +149,19 @@ func (a *AuthHandler) Check(c *gin.Context) {
 	c.JSON(http.StatusOK, response.SendSuccessResponse(response.Success{""}))
 }
 
+// Confirm handles the endpoint to confirm a user's registration.
+// @Summary Confirm user registration
+// @Description Confirm a user's registration with the provided hash
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param hash body domain.Auth true "Confirmation hash"
+// @Success 200 {object} response.Success
+// @Failure 400 {object} response.Error
+// @Router /auth/confirm [post]
 func (a *AuthHandler) Confirm(c *gin.Context) {
-	var auth domain.Auth
-	err := c.BindJSON(&auth)
+	var hash domain.Auth
+	err := c.ShouldBindJSON(&hash)
 	if err != nil {
 		c.JSON(
 			getStatusCode(err),
@@ -167,7 +174,7 @@ func (a *AuthHandler) Confirm(c *gin.Context) {
 	//	c.JSON(http.StatusBadRequest, domain.ErrBadParamInput)
 	//}
 	ctx := c.Request.Context()
-	err = a.AUsecase.ConfirmUser(ctx, auth)
+	err = a.AUsecase.ConfirmUser(ctx, hash.Hash)
 	if err != nil {
 		c.JSON(
 			getStatusCode(err),
@@ -199,27 +206,4 @@ func getStatusCode(err error) int {
 	default:
 		return http.StatusInternalServerError
 	}
-}
-
-func validateUserFields(user domain.Auth, fields ...string) error {
-	v := validator.New()
-
-	// Perform validation on specific fields
-	for _, field := range fields {
-		switch field {
-		case "Password":
-			if err := v.Var(user.ID, "required,min=6"); err != nil {
-				return err
-			}
-		case "Login":
-			if err := v.Var(user.Login, "required,min=4"); err != nil {
-				return err
-			}
-		case "Email":
-			if err := v.Var(user.Email, "required,email"); err != nil {
-				return err
-			}
-		}
-	}
-	return v.StructPartial(user, fields...)
 }

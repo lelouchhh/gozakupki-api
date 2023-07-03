@@ -11,7 +11,7 @@ var (
 	secretKey = []byte("TA9[ZPw=rt&4&f1v/zl%gXn't53}d!3") // Replace with your actual secret key
 )
 
-func GenerateToken(id int64, login, email, device string) (string, error) {
+func GenerateToken(id int64, login, email string) (string, error) {
 	// Define the expiration time (15 days from now)
 	expirationTime := time.Now().Add(15 * 24 * time.Hour)
 
@@ -20,7 +20,6 @@ func GenerateToken(id int64, login, email, device string) (string, error) {
 		"userID": id,
 		"login":  login,
 		"email":  email,
-		"device": device,
 		"exp":    expirationTime.Unix(),
 	}
 

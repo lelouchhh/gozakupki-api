@@ -10,6 +10,7 @@ import (
 	_AuthHttp "gozakupki-api/auth/delivery/http"
 	_AuthRepo "gozakupki-api/auth/repository/postgres"
 	_AuthUcase "gozakupki-api/auth/usecase"
+	_MailRepo "gozakupki-api/mail/repository/rest"
 	"log"
 
 	swaggerfiles "github.com/swaggo/files"
@@ -94,7 +95,8 @@ func main() {
 	timeoutContext := time.Duration(viper.GetInt("context.timeout")) * time.Second
 
 	userRepo := _AuthRepo.NewAuthRepository(dbConn)
-	UserUcase := _AuthUcase.NewAuthUsecase(userRepo, timeoutContext)
+	MailRepo := _MailRepo.NewRestRepository("test")
+	UserUcase := _AuthUcase.NewAuthUsecase(userRepo, MailRepo, timeoutContext)
 	_AuthHttp.NewAuthHandler(g, UserUcase)
 
 	server := &http.Server{

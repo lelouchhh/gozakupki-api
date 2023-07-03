@@ -49,7 +49,6 @@ func IsValid(t string) error {
 		}
 		return []byte(secretKey), nil
 	})
-	fmt.Println(parsedToken.Claims)
 	// Check for parsing errors
 	if err != nil {
 		return domain.ErrInternalServerError

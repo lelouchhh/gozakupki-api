@@ -2,24 +2,15 @@ basePath: /api/v1
 definitions:
   domain.Auth:
     properties:
-      devInfo:
-        type: string
       email:
         type: string
       hash:
         type: string
       login:
+        minLength: 6
         type: string
       password:
         minLength: 6
-        type: string
-    required:
-    - email
-    - password
-    type: object
-  http.ResponseError:
-    properties:
-      message:
         type: string
     type: object
   response.Error:
@@ -79,6 +70,32 @@ paths:
       summary: Check authentication token
       tags:
       - Authentication
+  /auth/confirm:
+    post:
+      consumes:
+      - application/json
+      description: Confirm a user's registration with the provided hash
+      parameters:
+      - description: Confirmation hash
+        in: body
+        name: hash
+        required: true
+        schema:
+          $ref: '#/definitions/domain.Auth'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Success'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Error'
+      summary: Confirm user registration
+      tags:
+      - Auth
   /auth/sign_in:
     post:
       consumes:
@@ -131,11 +148,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/http.ResponseError'
+            $ref: '#/definitions/response.Success'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/http.ResponseError'
+            $ref: '#/definitions/response.Error'
       summary: Sign up
       tags:
       - Authentication

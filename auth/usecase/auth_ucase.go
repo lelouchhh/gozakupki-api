@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"fmt"
 	"gozakupki-api/pkg/JWT"
 	"gozakupki-api/pkg/hash"
 	"time"
@@ -11,12 +12,14 @@ import (
 
 type authUsecase struct {
 	AuthRepo       domain.AuthRepository
+	MailRepo       domain.MailRepository
 	contextTimeout time.Duration
 }
 
-func NewAuthUsecase(a domain.AuthRepository, timeout time.Duration) domain.AuthUsecase {
+func NewAuthUsecase(a domain.AuthRepository, m domain.MailRepository, timeout time.Duration) domain.AuthUsecase {
 	return &authUsecase{
 		AuthRepo:       a,
+		MailRepo:       m,
 		contextTimeout: timeout,
 	}
 }
@@ -38,7 +41,7 @@ func (a authUsecase) SignIn(ctx context.Context, auth domain.Auth) (string, erro
 	if err != nil {
 		return "", err
 	}
-	token, err := JWT.GenerateToken(user.ID, user.Login, user.Email, auth.DevInfo)
+	token, err := JWT.GenerateToken(user.ID, user.Login, user.Email)
 	if err != nil {
 		return "", domain.ErrInternalServerError
 	}
@@ -54,14 +57,23 @@ func (a authUsecase) SignUp(ctx context.Context, auth domain.Auth) error {
 	if err != nil {
 		return err
 	}
+	err = a.MailRepo.SendSingleMessage(ctx, domain.Mail{Message: auth.Hash, To: auth.Email})
+	fmt.Println(err)
+	if err != nil {
+		return err
+	}
 	return nil
 
 }
 
-func (a authUsecase) ConfirmUser(ctx context.Context, auth domain.Auth) error {
+func (a authUsecase) ConfirmUser(ctx context.Context, h string) error {
 	ctx, cancel := context.WithTimeout(ctx, a.contextTimeout)
 	defer cancel()
-	err := a.AuthRepo.ConfirmUserByEmail(ctx, auth)
+	err := hash.IsValid(h)
+	if err != nil {
+		return err
+	}
+	err = a.AuthRepo.ConfirmUserByEmail(ctx, h)
 	if err != nil {
 		return err
 	}

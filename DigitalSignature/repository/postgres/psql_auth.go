@@ -21,15 +21,15 @@ func NewAuthRepository(conn *sqlx.DB) domain.AuthRepository {
 
 func (a *myAuthRepository) GetUser(ctx context.Context, auth domain.Auth) (domain.Auth, error) {
 	var user domain.Auth
-	fmt.Println(auth.Login, auth.Password)
+	fmt.Println(auth)
 	if auth.Email == "" {
-		err := a.db.GetContext(ctx, &user, "select user_id as id, email, login from auth.t_user where login = $1 and hex_pass = $2 and user_status = 0;", auth.Login, auth.Password)
+		err := a.db.GetContext(ctx, &user, "select user_id as id, email, login from auth.t_user where login = $1 and hex_pass = $2 and user_status = $3;", auth.Login, auth.Password, "1")
 		if err != nil {
 			return domain.Auth{}, domain.ErrUnauthorized
 		}
 
 	} else {
-		err := a.db.GetContext(ctx, &user, "select user_id as id, email, login from auth.t_user where email = $1 and hex_pass = $2 and user_status = 0;", auth.Email, auth.Password)
+		err := a.db.GetContext(ctx, &user, "select user_id as id, email, login from auth.t_user where email = $1 and hex_pass = $2 and user_status = $3;", auth.Email, auth.Password, "1")
 		if err != nil {
 
 			return domain.Auth{}, domain.ErrUnauthorized
@@ -70,13 +70,13 @@ func (a *myAuthRepository) doesUserExist(ctx context.Context, auth domain.Auth) 
 	}
 	return nil
 }
-func (a *myAuthRepository) ConfirmUserByEmail(ctx context.Context, auth domain.Auth) error {
-	query := `call auth.check_auth_email_reg($1, $2)`
+func (a *myAuthRepository) ConfirmUserByEmail(ctx context.Context, hash string) error {
+	query := `update auth.t_user set user_status = '1' where email_pass = $1`
 	stmt, err := a.db.PrepareContext(ctx, query)
 	if err != nil {
 		return domain.ErrInternalServerError
 	}
-	_, err = stmt.ExecContext(ctx, auth.Login, auth.Hash)
+	_, err = stmt.ExecContext(ctx, hash)
 	if err != nil {
 		return domain.ErrBadParamInput
 	}

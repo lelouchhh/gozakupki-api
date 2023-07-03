@@ -69,6 +69,46 @@ const docTemplate = `{
                 }
             }
         },
+        "/auth/confirm": {
+            "post": {
+                "description": "Confirm a user's registration with the provided hash",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Confirm user registration",
+                "parameters": [
+                    {
+                        "description": "Confirmation hash",
+                        "name": "hash",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.Auth"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.Success"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Error"
+                        }
+                    }
+                }
+            }
+        },
         "/auth/sign_in": {
             "post": {
                 "security": [
@@ -151,13 +191,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/http.ResponseError"
+                            "$ref": "#/definitions/response.Success"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/http.ResponseError"
+                            "$ref": "#/definitions/response.Error"
                         }
                     }
                 }
@@ -167,14 +207,7 @@ const docTemplate = `{
     "definitions": {
         "domain.Auth": {
             "type": "object",
-            "required": [
-                "email",
-                "password"
-            ],
             "properties": {
-                "devInfo": {
-                    "type": "string"
-                },
                 "email": {
                     "type": "string"
                 },
@@ -182,19 +215,12 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "login": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 6
                 },
                 "password": {
                     "type": "string",
                     "minLength": 6
-                }
-            }
-        },
-        "http.ResponseError": {
-            "type": "object",
-            "properties": {
-                "message": {
-                    "type": "string"
                 }
             }
         },
