@@ -2,12 +2,11 @@ package usecase
 
 import (
 	"context"
-	"fmt"
+	"gozakupki-api/domain"
 	"gozakupki-api/pkg/JWT"
 	"gozakupki-api/pkg/hash"
+	"gozakupki-api/pkg/random"
 	"time"
-
-	"gozakupki-api/domain"
 )
 
 type authUsecase struct {
@@ -35,7 +34,7 @@ func (a authUsecase) SignIn(ctx context.Context, auth domain.Auth) (string, erro
 	ctx, cancel := context.WithTimeout(ctx, a.contextTimeout)
 	defer cancel()
 
-	auth.Password = hash.GetMD5Hash(auth.Login + "+" + auth.Password)
+	auth.Password = hash.GetMD5Hash(auth.Password + "xd")
 
 	user, err := a.AuthRepo.GetUser(ctx, auth)
 	if err != nil {
@@ -52,13 +51,12 @@ func (a authUsecase) SignIn(ctx context.Context, auth domain.Auth) (string, erro
 func (a authUsecase) SignUp(ctx context.Context, auth domain.Auth) error {
 	ctx, cancel := context.WithTimeout(ctx, a.contextTimeout)
 	defer cancel()
-	auth.Password = hash.GetMD5Hash(auth.Login + "+" + auth.Password)
+	auth.Password = hash.GetMD5Hash(auth.Password + "xd")
 	err := a.AuthRepo.SignUp(ctx, auth)
 	if err != nil {
 		return err
 	}
 	err = a.MailRepo.SendSingleMessage(ctx, domain.Mail{Message: auth.Hash, To: auth.Email})
-	fmt.Println(err)
 	if err != nil {
 		return err
 	}
@@ -80,9 +78,31 @@ func (a authUsecase) ConfirmUser(ctx context.Context, h string) error {
 	return nil
 }
 
-func (a authUsecase) ResetUserEmailPass(ctx context.Context, auth domain.Auth) {
-	//TODO implement me
-	panic("implement me")
+func (a authUsecase) ResetPassword(ctx context.Context, auth domain.Auth) error {
+	ctx, cancel := context.WithTimeout(ctx, a.contextTimeout)
+	defer cancel()
+	password := random.GeneratePassword(random.PasswordLength, random.MinSpecialChar, random.MinNum, random.MinUpperCase)
+
+	auth, err := a.AuthRepo.GetUserByEmail(ctx, auth)
+	if err != nil {
+		return err
+	}
+
+	err = a.MailRepo.SendSingleMessage(ctx, domain.Mail{Message: password, To: auth.Email})
+	if err != nil {
+		return err
+	}
+	token, err := JWT.GenerateToken(auth.ID, auth.Login, auth.Email)
+	if err != nil {
+		return err
+	}
+	auth.Password = token
+
+	err = a.AuthRepo.ResetPassword(ctx, auth)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 //func (d *DeliverUsecase) Delete(c context.Context, id int) error {

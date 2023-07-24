@@ -24,6 +24,7 @@ func NewAuthHandler(e *gin.Engine, us domain.AuthUsecase) {
 		auth.POST("/sign_up", handler.SignUp)
 		auth.GET("/check", handler.Check)
 		auth.POST("/confirm", handler.Confirm)
+		auth.POST("/reset_password", handler.ResetPassword)
 	}
 }
 
@@ -42,15 +43,6 @@ func NewAuthHandler(e *gin.Engine, us domain.AuthUsecase) {
 func (a *AuthHandler) SignIn(c *gin.Context) {
 	var auth domain.Auth
 	err := c.BindJSON(&auth)
-	if err != nil {
-		c.JSON(
-			getStatusCode(err),
-			response.SendErrorResponse(response.Error{Message: domain.ErrBadParamInput.Error(), Code: getStatusCode(err)}),
-		)
-		return
-	}
-	//sv := validator.New()
-	//err = sv.Struct(&auth)
 	if err != nil {
 		c.JSON(getStatusCode(err), response.SendErrorResponse(response.Error{
 			Message: domain.ErrBadParamInput.Error(),
@@ -90,10 +82,11 @@ func (a *AuthHandler) SignUp(c *gin.Context) {
 	var auth domain.Auth
 	err := c.BindJSON(&auth)
 	if err != nil {
-		c.JSON(
-			getStatusCode(err),
-			response.SendErrorResponse(response.Error{Message: domain.ErrBadParamInput.Error(), Code: getStatusCode(err)}),
-		)
+		c.JSON(getStatusCode(err), response.SendErrorResponse(response.Error{
+			Message: domain.ErrBadParamInput.Error(),
+			Details: "Поля не соответствуют требованиям",
+			Code:    getStatusCode(err),
+		}))
 		return
 	}
 	////sv := validator.New()
@@ -104,13 +97,15 @@ func (a *AuthHandler) SignUp(c *gin.Context) {
 	ctx := c.Request.Context()
 	err = a.AUsecase.SignUp(ctx, auth)
 	if err != nil {
-		c.JSON(
-			getStatusCode(err),
-			response.SendErrorResponse(response.Error{Message: err.Error(), Code: getStatusCode(err)}),
-		)
+		c.JSON(http.StatusUnauthorized, response.SendErrorResponse(
+			response.Error{
+				err.Error(),
+				nil,
+				getStatusCode(err),
+			}))
 		return
 	}
-	c.JSON(http.StatusCreated, "")
+	c.JSON(http.StatusOK, response.SendSuccessResponse(response.Success{Data: "ok"}))
 	return
 }
 
@@ -127,7 +122,7 @@ func (a *AuthHandler) SignUp(c *gin.Context) {
 // @Router /auth/check [get]
 func (a *AuthHandler) Check(c *gin.Context) {
 	authHeader := c.GetHeader("Authorization")
-	if authHeader == "" {
+	if authHeader[7:] == "" {
 		c.JSON(http.StatusUnauthorized, response.SendErrorResponse(
 			response.Error{
 				domain.ErrUnauthorized.Error(),
@@ -146,7 +141,30 @@ func (a *AuthHandler) Check(c *gin.Context) {
 		}))
 		return
 	}
-	c.JSON(http.StatusOK, response.SendSuccessResponse(response.Success{""}))
+	c.JSON(http.StatusOK, response.SendSuccessResponse(response.Success{Data: ""}))
+}
+
+func (a *AuthHandler) ResetPassword(c *gin.Context) {
+	var auth domain.Auth
+	err := c.BindJSON(&auth)
+	if err != nil {
+		c.JSON(getStatusCode(err), response.SendErrorResponse(response.Error{
+			Message: domain.ErrBadParamInput.Error(),
+			Details: "Поля не соответствуют требованиям",
+			Code:    getStatusCode(err),
+		}))
+		return
+	}
+	ctx := c.Request.Context()
+	err = a.AUsecase.ResetPassword(ctx, auth)
+	if err != nil {
+		c.JSON(getStatusCode(err), response.SendErrorResponse(response.Error{
+			Message: err.Error(),
+			Code:    getStatusCode(err),
+		}))
+		return
+	}
+	c.JSON(http.StatusOK, response.SendSuccessResponse(response.Success{Data: ""}))
 }
 
 // Confirm handles the endpoint to confirm a user's registration.
@@ -163,10 +181,11 @@ func (a *AuthHandler) Confirm(c *gin.Context) {
 	var hash domain.Auth
 	err := c.ShouldBindJSON(&hash)
 	if err != nil {
-		c.JSON(
-			getStatusCode(err),
-			response.SendErrorResponse(response.Error{Message: domain.ErrBadParamInput.Error(), Code: getStatusCode(err)}),
-		)
+		c.JSON(getStatusCode(err), response.SendErrorResponse(response.Error{
+			Message: domain.ErrBadParamInput.Error(),
+			Details: "Поля не соответствуют требованиям",
+			Code:    getStatusCode(err),
+		}))
 		return
 	}
 	//err = validateFields(auth, "Email", "Password", "Login")
@@ -176,17 +195,14 @@ func (a *AuthHandler) Confirm(c *gin.Context) {
 	ctx := c.Request.Context()
 	err = a.AUsecase.ConfirmUser(ctx, hash.Hash)
 	if err != nil {
-		c.JSON(
-			getStatusCode(err),
-			response.SendErrorResponse(response.Error{Message: err.Error(), Code: getStatusCode(err)}),
-		)
+		c.JSON(getStatusCode(err), response.SendErrorResponse(response.Error{
+			Message: err.Error(),
+			Details: "",
+			Code:    getStatusCode(err),
+		}))
 		return
 	}
-	c.JSON(
-		getStatusCode(err),
-		response.SendSuccessResponse(response.Success{}),
-	)
-	return
+	c.JSON(http.StatusOK, response.SendSuccessResponse(response.Success{Data: ""}))
 }
 func getStatusCode(err error) int {
 	if err == nil {
@@ -203,6 +219,8 @@ func getStatusCode(err error) int {
 		return http.StatusConflict
 	case domain.ErrUnauthorized:
 		return http.StatusUnauthorized
+	case domain.UserAlreadyExist:
+		return http.StatusConflict
 	default:
 		return http.StatusInternalServerError
 	}

@@ -15,9 +15,12 @@ type AuthUsecase interface {
 	SignUp(ctx context.Context, auth Auth) error
 	ConfirmUser(ctx context.Context, hash string) error
 	CheckToken(ctx context.Context, token string) error
+	ResetPassword(ctx context.Context, auth Auth) error
 }
 type AuthRepository interface {
 	GetUser(ctx context.Context, auth Auth) (Auth, error)
 	SignUp(ctx context.Context, auth Auth) error
 	ConfirmUserByEmail(ctx context.Context, hash string) error
+	ResetPassword(ctx context.Context, auth Auth) error
+	GetUserByEmail(ctx context.Context, auth Auth) (Auth, error)
 }
