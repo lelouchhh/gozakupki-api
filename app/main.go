@@ -95,7 +95,7 @@ func main() {
 	timeoutContext := time.Duration(viper.GetInt("context.timeout")) * time.Second
 
 	userRepo := _AuthRepo.NewAuthRepository(dbConn)
-	MailRepo := _MailRepo.NewRestRepository("test")
+	MailRepo := _MailRepo.NewRestRepository("localhost:9092")
 	UserUcase := _AuthUcase.NewAuthUsecase(userRepo, MailRepo, timeoutContext)
 	_AuthHttp.NewAuthHandler(g, UserUcase)
 

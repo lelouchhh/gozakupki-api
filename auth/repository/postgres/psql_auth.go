@@ -11,15 +11,15 @@ import (
 	"time"
 )
 
-type myAuthRepository struct {
+type authRepository struct {
 	db *sqlx.DB
 }
 
 func NewAuthRepository(conn *sqlx.DB) domain.AuthRepository {
-	return &myAuthRepository{conn}
+	return &authRepository{conn}
 }
 
-func (a *myAuthRepository) GetUser(ctx context.Context, auth domain.Auth) (domain.Auth, error) {
+func (a *authRepository) GetUser(ctx context.Context, auth domain.Auth) (domain.Auth, error) {
 	var user domain.Auth
 	if auth.Email == "" {
 		err := a.db.GetContext(ctx, &user, "select user_id as id, email, login from auth.t_user where login = $1 and hex_pass = $2 and user_status = $3;", auth.Login, auth.Password, "0")
@@ -27,6 +27,7 @@ func (a *myAuthRepository) GetUser(ctx context.Context, auth domain.Auth) (domai
 			if err == sql.ErrNoRows {
 				return domain.Auth{}, domain.ErrUnauthorized
 			}
+			return domain.Auth{}, domain.ErrInternalServerError
 		}
 
 	} else {
@@ -35,15 +36,16 @@ func (a *myAuthRepository) GetUser(ctx context.Context, auth domain.Auth) (domai
 			if err == sql.ErrNoRows {
 				return domain.Auth{}, domain.ErrUnauthorized
 			}
+			return domain.Auth{}, domain.ErrInternalServerError
 		}
 	}
 	return user, nil
 }
 
-func (a *myAuthRepository) SignUp(ctx context.Context, auth domain.Auth) error {
+func (a *authRepository) SignUp(ctx context.Context, auth domain.Auth) error {
 	err := a.doesUserExist(ctx, auth)
 	if err != nil {
-		return err
+		return domain.UserAlreadyExist
 	}
 	query := `insert into auth.t_user (login, hex_pass, email, email_pass, user_status, time_reg, user_role) values ($1, $2, $3, $4, $5, $6, $7);`
 	stmt, err := a.db.PrepareContext(ctx, query)
@@ -61,20 +63,21 @@ func (a *myAuthRepository) SignUp(ctx context.Context, auth domain.Auth) error {
 
 	return nil
 }
-func (a *myAuthRepository) doesUserExist(ctx context.Context, auth domain.Auth) error {
+func (a *authRepository) doesUserExist(ctx context.Context, auth domain.Auth) error {
 	var doesExist bool
 	err := a.db.GetContext(ctx, &doesExist, "select exists(select 1 from auth.t_user where email = $1 or login = $2)", auth.Email, auth.Login)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return domain.ErrConflict
 		}
+		return domain.ErrInternalServerError
 	}
 	if doesExist {
 		return domain.UserAlreadyExist
 	}
 	return nil
 }
-func (a *myAuthRepository) ConfirmUserByEmail(ctx context.Context, hash string) error {
+func (a *authRepository) ConfirmUserByEmail(ctx context.Context, hash string) error {
 	query := `update auth.t_user set user_status = '0' where email_pass = $1`
 	stmt, err := a.db.PrepareContext(ctx, query)
 	if err != nil {
@@ -87,7 +90,7 @@ func (a *myAuthRepository) ConfirmUserByEmail(ctx context.Context, hash string) 
 	return err
 }
 
-func (a *myAuthRepository) ResetPassword(ctx context.Context, auth domain.Auth) error {
+func (a *authRepository) ResetPassword(ctx context.Context, auth domain.Auth) error {
 	query := `update auth.t_user set hex_pass = $1 where email = $2`
 	stmt, err := a.db.PrepareContext(ctx, query)
 	if err != nil {
@@ -101,12 +104,13 @@ func (a *myAuthRepository) ResetPassword(ctx context.Context, auth domain.Auth) 
 	return err
 }
 
-func (a *myAuthRepository) GetUserByEmail(ctx context.Context, auth domain.Auth) (domain.Auth, error) {
+func (a *authRepository) GetUserByEmail(ctx context.Context, auth domain.Auth) (domain.Auth, error) {
 	err := a.db.GetContext(ctx, &auth, "select user_id as id, email, login from auth.t_user where email = $1 and user_status = '0';", auth.Email)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return domain.Auth{}, domain.ErrUnauthorized
 		}
+		return domain.Auth{}, domain.ErrInternalServerError
 	}
 	return auth, nil
 }

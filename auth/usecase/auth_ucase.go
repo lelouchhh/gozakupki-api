@@ -45,7 +45,6 @@ func (a authUsecase) SignIn(ctx context.Context, auth domain.Auth) (string, erro
 		return "", domain.ErrInternalServerError
 	}
 	return token, nil
-
 }
 
 func (a authUsecase) SignUp(ctx context.Context, auth domain.Auth) error {
@@ -56,7 +55,7 @@ func (a authUsecase) SignUp(ctx context.Context, auth domain.Auth) error {
 	if err != nil {
 		return err
 	}
-	err = a.MailRepo.SendSingleMessage(ctx, domain.Mail{Message: auth.Hash, To: auth.Email})
+	err = a.MailRepo.SendSingleData(ctx, domain.Mail{Data: auth.Hash, To: auth.Email, EndPoint: "basic/confirm_account"})
 	if err != nil {
 		return err
 	}
@@ -88,7 +87,7 @@ func (a authUsecase) ResetPassword(ctx context.Context, auth domain.Auth) error 
 		return err
 	}
 
-	err = a.MailRepo.SendSingleMessage(ctx, domain.Mail{Message: password, To: auth.Email})
+	err = a.MailRepo.SendSingleData(ctx, domain.Mail{To: auth.Email, Data: password, EndPoint: "basic/reset_password"})
 	if err != nil {
 		return err
 	}
